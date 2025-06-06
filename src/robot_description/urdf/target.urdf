@@ -67,22 +67,22 @@
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
-  <transmission name="Slider 47_tran">
+  <transmission name="Slider 52_tran">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="Slider 47">
+    <joint name="Slider 52">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
     </joint>
-    <actuator name="Slider 47_actr">
+    <actuator name="Slider 52_actr">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
-  <transmission name="Slider 49_tran">
+  <transmission name="Slider 53_tran">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="Slider 49">
+    <joint name="Slider 53">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
     </joint>
-    <actuator name="Slider 49_actr">
+    <actuator name="Slider 53_actr">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
@@ -169,13 +169,13 @@
     <mu2>0.2</mu2>
     <selfCollide>true</selfCollide>
   </gazebo>
-  <gazebo reference="crawler_deap12_1">
+  <gazebo reference="cralwer_deap_1">
     <material>Gazebo/Silver</material>
     <mu1>0.2</mu1>
     <mu2>0.2</mu2>
     <selfCollide>true</selfCollide>
   </gazebo>
-  <gazebo reference="cralwer_deap_1">
+  <gazebo reference="cralwer_deap2_1">
     <material>Gazebo/Silver</material>
     <mu1>0.2</mu1>
     <mu2>0.2</mu2>
@@ -441,31 +441,11 @@
       </geometry>
     </collision>
   </link>
-  <link name="crawler_deap12_1">
-    <inertial>
-      <origin xyz="0.030408472584100878 -0.0211628913477675 -0.008749722528269332" rpy="0 0 0"/>
-      <mass value="0.2366775000684548"/>
-      <inertia ixx="0.000135" iyy="0.000223" izz="0.000236" ixy="7.1e-05" iyz="0.0" ixz="-0.0"/>
-    </inertial>
-    <visual>
-      <origin xyz="-0.030349 0.277717 -1.051938" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="package://robot_description/meshes/crawler_deap12_1.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-      <material name="silver"/>
-    </visual>
-    <collision>
-      <origin xyz="-0.030349 0.277717 -1.051938" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="package://robot_description/meshes/crawler_deap12_1.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-    </collision>
-  </link>
   <link name="cralwer_deap_1">
     <inertial>
-      <origin xyz="-0.030409437875279874 -0.021162892297619196 -0.008749722545623229" rpy="0 0 0"/>
-      <mass value="0.23667750006845484"/>
-      <inertia ixx="0.000135" iyy="0.000223" izz="0.000236" ixy="-7.1e-05" iyz="-0.0" ixz="-0.0"/>
+      <origin xyz="-0.03526468017645347 -0.033147119299760386 -0.008749722536942839" rpy="0 0 0"/>
+      <mass value="0.28613249999999474"/>
+      <inertia ixx="0.000341" iyy="0.00027" izz="0.00046" ixy="-0.000146" iyz="0.0" ixz="0.0"/>
     </inertial>
     <visual>
       <origin xyz="0.023651 0.277717 -1.051938" rpy="0 0 0"/>
@@ -481,10 +461,31 @@
       </geometry>
     </collision>
   </link>
+  <link name="cralwer_deap2_1">
+    <inertial>
+      <origin xyz="0.03526371488527427 -0.03314711929976033 -0.008749722536943949" rpy="0 0 0"/>
+      <mass value="0.2861324999999951"/>
+      <inertia ixx="0.000341" iyy="0.00027" izz="0.00046" ixy="0.000146" iyz="0.0" ixz="-0.0"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.030349 0.277717 -1.051938" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robot_description/meshes/cralwer_deap2_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.030349 0.277717 -1.051938" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://robot_description/meshes/cralwer_deap2_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  
   <link name="virtual_tip_link">
     <inertial>
       <mass value="0.00001"/>
-      <origin xyz="0 0 0"/>
+      <origin xyz="0 -0.08 0"/>
       <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
     </inertial>
   </link>
@@ -554,21 +555,21 @@
     <parent link="board_1"/>
     <child link="craw_1"/>
   </joint>
-  <joint name="Slider 47" type="prismatic">
-    <origin xyz="0.063 -0.054 -0.00325" rpy="0 0 0"/>
-    <parent link="craw_1"/>
-    <child link="crawler_deap12_1"/>
-    <axis xyz="1.0 -0.0 -0.0"/>
-    <limit upper="0.01" lower="-0.01" effort="100" velocity="100"/>
-  </joint>
-  <joint name="Slider 49" type="prismatic">
+  <joint name="Slider 52" type="prismatic">
     <origin xyz="0.009 -0.054 -0.00325" rpy="0 0 0"/>
     <parent link="craw_1"/>
     <child link="cralwer_deap_1"/>
     <axis xyz="1.0 -0.0 -0.0"/>
     <limit upper="0.01" lower="-0.01" effort="100" velocity="100"/>
   </joint>
-  <joint name="virtual_tip_joint" type="revolute">
+  <joint name="Slider 53" type="prismatic">
+    <origin xyz="0.063 -0.054 -0.00325" rpy="0 0 0"/>
+    <parent link="craw_1"/>
+    <child link="cralwer_deap2_1"/>
+    <axis xyz="1.0 -0.0 -0.0"/>
+    <limit upper="0.01" lower="-0.01" effort="100" velocity="100"/>
+  </joint>
+    <joint name="virtual_tip_joint" type="revolute">
     <parent link="craw_1"/> <!-- 改成共用父連結 -->
     <child link="virtual_tip_link"/>
     <origin xyz=" 0.036 -0.054 -0.00325" rpy="0 0 0"/> <!-- 位置依你要掛在中間點的 offset 調整 -->

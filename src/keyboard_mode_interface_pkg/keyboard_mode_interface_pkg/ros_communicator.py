@@ -106,6 +106,7 @@ class RosCommunicator(Node):
             Marker, "/selected_target_marker", 10
         )
 
+
     def yolo_detection_status_callback(self, msg):
         self.latest_yolo_detection_status = msg
     def imu_data_callback(self, msg):

@@ -38,6 +38,9 @@ class ArmController:
 
         if len(self.joint_pos) < self.num_joints:
             self.joint_pos = [0.0] * self.num_joints
+            self.joint_pos[1]=-10
+            self.joint_pos[2]=90
+            self.joint_pos[4]=-90
             self.reset_arm()
             self.update_action(self.joint_pos)
         
@@ -58,7 +61,7 @@ class ArmController:
 
         # 確保初始位置已初始化
         self.ensure_joint_pos_initialized()
-
+        self.ik_solver.markEndEffectorPath()
         # 獲取當前 joint 的限制
         if 0 <= index < len(joint_limits):
             min_angle = joint_limits[index]["min_angle"]
@@ -85,6 +88,8 @@ class ArmController:
                 self.reset_arm()
             elif key=="t":
                 self.real_robot_position()
+            elif key == "r":
+                self.reset_to_a_position()
             elif key == "q":  # 結束控制
                 return True
             else:
@@ -169,7 +174,7 @@ class ArmController:
         joint_angles = joint_angles[:-1]
         self.joint_pos = list(joint_angles)
         self.update_action(joint_angles)  # 更新動作
-        time.sleep(1.0)
+        time.sleep(0.0001)
         self.action_in_progress = False
 
 
@@ -269,7 +274,7 @@ class ArmController:
             self.set_all_joint_angles(joint_angles)
             self.update_action(self.joint_pos)
             self.ik_solver.setJointPosition(self.joint_pos)
-            time.sleep(0.5)
+            time.sleep(0.0001)
         self.action_in_progress = False
 
     def random_wave(self, num_moves=5, steps=180):
@@ -278,7 +283,7 @@ class ArmController:
             self.ik_solver.setJointPosition(joint_angles)
             self.set_all_joint_angles(joint_angles)
             self.update_action(joint_angles)
-            time.sleep(0.01)
+            time.sleep(0.0001)
 
 
 
@@ -400,12 +405,12 @@ class ArmController:
             )
 
             # 小延遲以便系統完成移動
-            time.sleep(0.1)
+            time.sleep(0.001)
 
         return target_position_world
 
     def project_yolo_to_target(
-        self, step_size=0.05, target_distance=0.3, tolerance=0.02
+        self, step_size=0.001, target_distance=0.3, tolerance=0.02
     ):
         """
         將 YOLO 偵測的座標投射到距離機械手末端指定距離處，並確保與物體座標向量方向一致，使用線性插值逐步移動。
@@ -457,7 +462,7 @@ class ArmController:
                 break
 
             # 短暫延遲以允許手臂移動完成
-            time.sleep(0.01)
+            time.sleep(0.001)
 
     def project_yolo_to_world_look_at_target(self, offset_distance=0.1):
 
@@ -506,7 +511,7 @@ class ArmController:
         # return target_position_world, target_orientation_quaternion
 
     def project_yolo_to_world_target(
-        self, offset_distance=0.1, step_size=0.01, tolerance=0.05
+        self, offset_distance=0.1, step_size=0.001, tolerance=0.05
     ):
         """
         將 YOLO 偵測到的物體坐標投射到 PyBullet 世界坐標系中的末端執行器前方，並逐步移動到目標位置。
@@ -735,10 +740,10 @@ class ArmController:
         """
         joint_configs = [
             {"joint_id": 0,"angle": 0.0,},
-            {"joint_id": 1, "angle": 0.0, },
-            {"joint_id": 2, "angle": 0.0, },
+            {"joint_id": 1, "angle": -10, },
+            {"joint_id": 2, "angle": 90, },
             {"joint_id": 3, "angle": 0.0, },
-            {"joint_id": 4, "angle": 0.0, },
+            {"joint_id": 4, "angle": -90, },
             {"joint_id": 5, "angle": 0.0, },
             {"joint_id": 6, "angle": 0.01, },
             {"joint_id": 7, "angle": -0.01, },
@@ -757,6 +762,28 @@ class ArmController:
                 {"joint_id": 6, "angle": init_position[6], },
                 {"joint_id": 7, "angle": init_position[7], },
             ]
+        self.set_multiple_joint_positions(joint_configs)
+    def reset_to_a_position(self):
+        """
+        Resets the robotic arm to the default position (all angles set to 0).
+
+        This method resets the positions of all joints to their initial values, and the result can be
+        published using the `publish_arm_position()` method.
+
+        Example:
+            >>> self.reset_arm()
+            >>> self.publish_arm_position()
+        """
+        joint_configs = [
+            {"joint_id": 0,"angle": 0.0,},
+            {"joint_id": 1, "angle": -10, },
+            {"joint_id": 2, "angle": 90, },
+            {"joint_id": 3, "angle": 0.0, },
+            {"joint_id": 4, "angle": -90, },
+            {"joint_id": 5, "angle": 0.0, },
+            {"joint_id": 6, "angle": 0.01, },
+            {"joint_id": 7, "angle": -0.01, },
+        ]
         self.set_multiple_joint_positions(joint_configs)
 
     def set_last_joint_angle(self, target_angle, min_angle=-360.0, max_angle=360.0):

@@ -75,7 +75,7 @@ class PybulletRobotController:
             useFixedBase=True,
             basePosition=[0, 0, self.initial_height],
             baseOrientation=rotation,
-            flags=p.URDF_MERGE_FIXED_LINKS,
+            flags=p.URDF_USE_SELF_COLLISION | p.URDF_MERGE_FIXED_LINKS,
         )
 
         self.num_joints = p.getNumJoints(self.robot_id)  # Joints
@@ -311,7 +311,7 @@ class PybulletRobotController:
                 )
 
                 # self.setJointPosition(joint_angles[:len(self.controllable_joints)])
-                time.sleep(0.1)  # 加入延遲觀察
+                time.sleep(0.0001)  # 加入延遲觀察
             else:
                 print("無法找到合適的解。")
                 break
@@ -768,7 +768,7 @@ class PybulletRobotController:
             p.stepSimulation()
             time.sleep(self.time_step)
         p.disconnect()
-    def generate_random_target_and_solve_ik(self, x_range=(-0.15, -0.25), y_range=(-0.15,-0.25), z_range=(0.4, 0.6 ), steps=30):
+    def generate_random_target_and_solve_ik(self, x_range=(-0.15, 0.25), y_range=(-0.15,0.25), z_range=(0.0, 0.6 ), steps=30):
         """
         Generates a random target point, marks it, calculates the IK solution,
         and generates a smooth angle sequence to reach it.
@@ -788,10 +788,10 @@ class PybulletRobotController:
         target_z = random.uniform(z_range[0], z_range[1])+self.initial_height
 
         target_position = [target_x, target_y, target_z]
-        roll = math.pi /2
-        pitch = 0
-        yaw = 0
-        target_position += [roll, pitch, yaw]
+        # roll = math.pi /2
+        # pitch = 0
+        # yaw = 0
+        # target_position += [roll, pitch, yaw]
         print(f"Generated random target: {target_position}")
 
         # Mark the target position
