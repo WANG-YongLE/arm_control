@@ -92,6 +92,19 @@ class ArmController:
                 self.reset_to_a_position()
             elif key == "q":  # 結束控制
                 return True
+            elif key == "m":  # 避障 角度
+                A = [0.0, -10, 90, 0.0, -90, 0.0, 0.01, -0.01,0]
+                B = [0.0, -20, 70, -10.0, -90, 0.0, 0.01, -0.01,0]
+                C = [-50.0, -20, 70, -10.0, -90, 0.0, 0.01, -0.01,0]
+                D = [-50.0, -10, 90, 0.0, -90, 0.0, 0.01, -0.01,0]
+                self.move_joints_to_B(A)
+                self.move_joints_to_B(B)
+                self.move_joints_to_B(C)
+                self.move_joints_to_B(D)
+            elif key == "a":  # 避障 角度
+                A = [0.0, -10, 90, 0.0, -90, 0.0, 0.01, -0.01,0]
+                self.move_joints_to_B(A)
+
             else:
                 print(f"按鍵 '{key}' 無效，請使用 'i', 'k', 'b', 或 'q'。")
         else:
@@ -108,6 +121,42 @@ class ArmController:
     #     self.update_action(self.joint_pos)
 
     # auto control--------------------------------------------------
+
+
+    def move_joints_to_B(self, B, steps=10, sleep_time=0.005):
+        """
+        移動到角度 B，會將前六項從角度轉成弧度，再呼叫 move_joints_from_A_to_B。
+        """
+        if len(B) < 6:
+            raise ValueError("角度列表 B 至少要有 6 項")
+
+        # 取得目前 joint_pos，若未初始化則初始化
+        self.ensure_joint_pos_initialized()
+        current = self.joint_pos.copy()
+        # 將前六項角度從度數轉成弧度，其餘保持不變
+        B_radians = [math.radians(deg) for deg in B[:6]] + B[6:]
+        print(f"Moving from {current} to {B_radians}")
+
+        # 插值移動
+        for step in range(1, steps + 1):
+            interp = []
+            for i in range(len(B_radians)):
+                start = current[i] if i < len(current) else 0.0
+                end = B_radians[i]
+                interp.append(start + (end - start) * step / steps)
+            self.joint_pos = interp
+            self.update_action(self.joint_pos)
+            time.sleep(sleep_time)
+        # 最後確保到目標
+        self.joint_pos = B_radians
+        self.update_action(self.joint_pos)
+        time.sleep(0.1)
+        
+
+
+
+
+    
     def auto_control(self, key=None, mode="auto_arm_control"):
         self.ensure_joint_pos_initialized()
         if self.flag == 0:
@@ -174,7 +223,7 @@ class ArmController:
         joint_angles = joint_angles[:-1]
         self.joint_pos = list(joint_angles)
         self.update_action(joint_angles)  # 更新動作
-        time.sleep(0.0001)
+        # time.sleep(0.0001)
         self.action_in_progress = False
 
 
@@ -274,7 +323,7 @@ class ArmController:
             self.set_all_joint_angles(joint_angles)
             self.update_action(self.joint_pos)
             self.ik_solver.setJointPosition(self.joint_pos)
-            time.sleep(0.0001)
+            # time.sleep(0.0001)
         self.action_in_progress = False
 
     def random_wave(self, num_moves=5, steps=180):
@@ -283,7 +332,7 @@ class ArmController:
             self.ik_solver.setJointPosition(joint_angles)
             self.set_all_joint_angles(joint_angles)
             self.update_action(joint_angles)
-            time.sleep(0.0001)
+            # time.sleep(0.0001)
 
 
 
@@ -344,7 +393,7 @@ class ArmController:
             [0, 0, offset_distance]
         )
 
-        # 將物體從相機坐標系轉換到世界坐標系
+        # 將物體從相機坐坐標系轉換到世界坐標系
         object_position_world = (
             np.array(end_effector_position_world)
             + end_effector_rotation_matrix @ object_position_camera
@@ -404,8 +453,8 @@ class ArmController:
                 target_position_world[2],
             )
 
-            # 小延遲以便系統完成移動
-            time.sleep(0.001)
+            # # 小延遲以便系統完成移動
+            # time.sleep(0.001)
 
         return target_position_world
 
@@ -645,6 +694,7 @@ class ArmController:
         for i, angle in enumerate(angles_degrees):
             self.joint_pos[i] = angle
 
+
     def get_joint_angles(self):
         # Return the current joint angles in degrees
         return [round(math.degrees(angle), 2) for angle in self.joint_pos]
@@ -832,7 +882,7 @@ class ArmController:
 
         # 獲取當前角度（轉換為度數）
         print(f"joint_id: {joint_id}")
-        print(f"joint_pos: {len(self.joint_pos)}")
+        print(f"joint_pos: {self.joint_pos}")
         current_angle = math.degrees(self.joint_pos[joint_id])
 
         # 計算新角度

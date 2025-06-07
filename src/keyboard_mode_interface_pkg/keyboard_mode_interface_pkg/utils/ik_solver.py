@@ -120,7 +120,7 @@ class PybulletRobotController:
             positionGains=[kp] * len(self.controllable_joints),
             velocityGains=[kv] * len(self.controllable_joints),
         )
-        for _ in range(100):  # to settle the robot to its position
+        for _ in range(20):  # to settle the robot to its position
             p.stepSimulation()
 
     def get_base_position(self):
