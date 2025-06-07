@@ -5,7 +5,19 @@ import math
 class DataProcessor:
     def __init__(self, ros_communicator):
         self.ros_communicator = ros_communicator
-
+    def get_realsense_data(self):
+        realsense_data_msg = self.ros_communicator.get_latest_realsense_data()
+        if realsense_data_msg is not None:
+            # 將 x, y, z 座標放入列表
+            coordinates_list = [
+                realsense_data_msg.x,
+                realsense_data_msg.y,
+                realsense_data_msg.z,
+            ]
+            return coordinates_list
+        else:
+            # 如果資料為 None，返回空列表或其他指示資料無效的值
+            return []
     def get_realrobot_position(self):
         if(self.ros_communicator.get_realrobot_position() is not None):
             position = self.ros_communicator.get_realrobot_position()
@@ -32,7 +44,7 @@ class DataProcessor:
             return list(self.ros_communicator.get_latest_camera_x_multi_depth().data)
         else:
             return None
-
+    
 
 
     def get_processed_mediapipe_data(self):

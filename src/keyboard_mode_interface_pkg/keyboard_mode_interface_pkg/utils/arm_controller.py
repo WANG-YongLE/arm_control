@@ -66,7 +66,8 @@ class ArmController:
         if 0 <= index < len(joint_limits):
             min_angle = joint_limits[index]["min_angle"]
             max_angle = joint_limits[index]["max_angle"]
-
+            if key=="w":
+                return self.data_processor.get_latest_realsense_data()
             # 根據按鍵調整角度
             if key == "y" and (index == 6 or index == 7):  # 減少角度
                 self.execute_action("catch")

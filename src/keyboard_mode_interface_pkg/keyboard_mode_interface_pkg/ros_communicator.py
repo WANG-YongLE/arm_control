@@ -10,12 +10,20 @@ from visualization_msgs.msg import Marker
 from rclpy.action import ActionClient
 import rclpy
 import math
+import json
 
 
 class RosCommunicator(Node):
     def __init__(self):
         super().__init__("RosCommunicator")
         self.realrobot_position = None
+        self.realsense_data = {}
+        self.realsense_1_sub = self.create_subscription(
+            String, "/world_position_data_realsense_1", self.realsense_callback, 10
+        )
+        self.realsense_2_sub = self.create_subscription(
+            String, "/world_position_data_realsense_2", self.realsense_callback, 10
+        )
         self.subscriber_realrobot_position=self.create_subscription(
             Float32MultiArray, DeviceDataTypeEnum.realrobot, self.subscriber_realrobot_position_callback, 10
         )
@@ -106,7 +114,34 @@ class RosCommunicator(Node):
             Marker, "/selected_target_marker", 10
         )
 
+    def realsense_callback(self, msg):
+        """
+        Callback for realsense data. Parses the JSON string and stores it in self.realsense_data.
+        """
+        try:
+            data = json.loads(msg.data)
+            # Expecting data like: {"0": {"coords": {...}, "source": "real_sense_1"}}
+            for key, value in data.items():
+                source = value.get("source", None)
+                if source:
+                    self.realsense_data[source] = value
+                #    self.get_logger().info(f"Received realsense data from {source}: {value}")
+                else:
+                  #  self.get_logger().warn("Received realsense data without 'source' field.")
+        except Exception as e:
+            self.get_logger().error(f"Failed to parse realsense data: {e}")
 
+    def get_latest_realsense_data(self):
+        """
+        Return realsense data. Prefer 'real_sense_2' if available, otherwise return 'real_sense_1'.
+        """
+        if "real_sense_2" in self.realsense_data:
+            return self.realsense_data["real_sense_2"]
+        elif "real_sense_1" in self.realsense_data:
+            return self.realsense_data["real_sense_1"]
+        else:
+            self.get_logger().warn("No realsense data received yet.")
+            return None
     def yolo_detection_status_callback(self, msg):
         self.latest_yolo_detection_status = msg
     def imu_data_callback(self, msg):
