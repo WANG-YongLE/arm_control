@@ -125,9 +125,10 @@ class RosCommunicator(Node):
                 source = value.get("source", None)
                 if source:
                     self.realsense_data[source] = value
-                #    self.get_logger().info(f"Received realsense data from {source}: {value}")
+                    #    self.get_logger().info(f"Received realsense data from {source}: {value}")
                 else:
-                  #  self.get_logger().warn("Received realsense data without 'source' field.")
+                    #  self.get_logger().warn("Received realsense data without 'source' field.")
+                    ...
         except Exception as e:
             self.get_logger().error(f"Failed to parse realsense data: {e}")
 
@@ -298,5 +299,5 @@ class RosCommunicator(Node):
         joint_trajectory_point = JointTrajectoryPoint()
         joint_trajectory_point.positions = [math.degrees(a) for a in angle]
         joint_trajectory_point.velocities = [0.0] * len(angle)
-        print(f"Publishing robot arm angle: {joint_trajectory_point.positions}")
+        # print(f"Publishing robot arm angle: {joint_trajectory_point.positions}")
         self.publisher_joint_trajectory.publish(joint_trajectory_point)

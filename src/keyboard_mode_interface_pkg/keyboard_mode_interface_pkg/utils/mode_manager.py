@@ -31,3 +31,18 @@ class AutoArmMode(BaseMode):
             message=f"AutoArm Mode: Submode {submode}\nPress 'q' to go back.",
             on_key=on_key,
         )
+class RealsenseV1MoveToBall(BaseMode):
+    submodes = ["realsense_v1_move_to_ball"]
+
+    def enter(self):
+        self.app.horizontal_select(self.submodes, self.handle_submode_select)
+
+    def handle_submode_select(self, submode):
+        def on_key(key):
+            print("DDD")
+            self.app.arm_controller.realsense_ball( key=key)
+
+        self.show_submode_screen(
+            message=f"AutoArm Mode: Submode {submode}\nPress 'q' to go back.",
+            on_key=on_key,
+        )

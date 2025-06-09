@@ -3,11 +3,13 @@ import urwid
 from .mode_manager import (
     ArmMode,
     AutoArmMode,
+    RealsenseV1MoveToBall
 )
 
 MODES_REGISTRY = {
     "mode_arm": ("Manual Arm Control", ArmMode),
     "mode_auto_arm": ("Automatic Arm Mode", AutoArmMode),
+    "mode_realsense":("Realsense V1 Move to Ball", RealsenseV1MoveToBall),
 }
 
 

@@ -23,6 +23,7 @@ class ArmController:
         self.world_created = False
         self.is_moving = False
         self.action_in_progress = False  # 動作進行中的標誌
+    
         self.latest_align_coordinates = None
 
         self.base_link_position = self.ik_solver.get_base_position()
@@ -32,6 +33,7 @@ class ArmController:
         self.predefined_actions = {
             "catch": self._catch_action,
         }
+        self.end_pos=[]
  
     #    print(self.data_processor.get_realrobot_position())
     def ensure_joint_pos_initialized(self):
@@ -43,6 +45,52 @@ class ArmController:
             self.joint_pos[4]=-90
             self.reset_arm()
             self.update_action(self.joint_pos)
+        
+    def realsense_ball(self,key):
+        print("realsense_ball")
+        print("VVVVVVVV")
+        self.end_pos=self.ik_solver.solveForwardPositonKinematics()
+        print(f"目前角度: {self.end_pos}")
+        self.ensure_joint_pos_initialized()
+        self.ik_solver.markEndEffectorPath()
+        print("開始移動")
+        if key == "k":
+            print(f"ssssssssssssssssssssss{self.data_processor.get_realsense_data()}")
+        elif key == "p":
+            print( self.ik_solver.solveForwardPositonKinematics())
+        elif key=="a":
+            print(f"A:{self.end_pos}")
+            self.end_pos[0] += 0.1
+            print(f"A:{self.end_pos}")
+        elif key=="s":
+            print(f"S:{self.end_pos}")
+            self.end_pos[0] -= 0.1
+            print(f"S:{self.end_pos}")
+        elif key=="d":
+            print(f"D:{self.end_pos}")
+            self.end_pos[1] += 0.1
+            print(f"D:{self.end_pos}")
+        elif key=="f":
+            print(f"F:{self.end_pos}")
+            self.end_pos[1] -= 0.1
+            print(f"F:{self.end_pos}")
+        elif key=="g":
+            print(f"G:{self.end_pos}")
+            self.end_pos[2] += 0.1
+            print(f"G:{self.end_pos}")
+        elif key=="h":
+            print(f"H:{self.end_pos}")
+            self.end_pos[2] -= 0.1
+            print(f"H:{self.end_pos}")
+        else: return
+        joint_angle_sequences=self.ik_solver.go_to_position(self.end_pos)
+        print(f"移動到角度: {self.end_pos}")
+        for joint_angles in joint_angle_sequences:
+            self.ik_solver.setJointPosition(joint_angles)
+            self.set_all_joint_angles(joint_angles)
+            self.update_action(joint_angles) 
+        print("FFFFFFFFFFF")
+
         
 
 
@@ -67,7 +115,7 @@ class ArmController:
             min_angle = joint_limits[index]["min_angle"]
             max_angle = joint_limits[index]["max_angle"]
             if key=="w":
-                return self.data_processor.get_latest_realsense_data()
+                print(self.data_processor.get_latest_realsense_data())
             # 根據按鍵調整角度
             if key == "y" and (index == 6 or index == 7):  # 減少角度
                 self.execute_action("catch")
@@ -224,7 +272,7 @@ class ArmController:
         joint_angles = joint_angles[:-1]
         self.joint_pos = list(joint_angles)
         self.update_action(joint_angles)  # 更新動作
-        # time.sleep(0.0001)
+        time.sleep(0.0001)
         self.action_in_progress = False
 
 
@@ -712,6 +760,7 @@ class ArmController:
 
             joint_pos.append(0)
         self.ik_solver.setJointPosition(joint_pos)
+        self.joint_pos=joint_pos
      #   self.ik_solver.markEndEffector()
 
     def clamp(self, value, min_value, max_value):

@@ -8,13 +8,7 @@ class DataProcessor:
     def get_realsense_data(self):
         realsense_data_msg = self.ros_communicator.get_latest_realsense_data()
         if realsense_data_msg is not None:
-            # 將 x, y, z 座標放入列表
-            coordinates_list = [
-                realsense_data_msg.x,
-                realsense_data_msg.y,
-                realsense_data_msg.z,
-            ]
-            return coordinates_list
+            return realsense_data_msg
         else:
             # 如果資料為 None，返回空列表或其他指示資料無效的值
             return []

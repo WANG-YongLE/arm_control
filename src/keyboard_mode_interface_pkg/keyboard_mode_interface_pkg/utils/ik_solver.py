@@ -28,7 +28,7 @@ class PybulletRobotController:
     def __init__(
         self,
         
-        initial_height=0.69,
+        initial_height=0,
 
         controllable_joints=None,
         end_eff_index=None,
@@ -109,8 +109,8 @@ class PybulletRobotController:
     def setJointPosition(self, position, kp=1.0, kv=1.0):
         # print('Joint position controller')
         zero_vec = [0.0] * len(self.controllable_joints)
-        print(f"控制的關節索引數量: {len(self.controllable_joints)}")
-        print(f"輸入的目標位置數量: {len(position)}")
+        # print(f"控制的關節索引數量: {len(self.controllable_joints)}")
+        # print(f"輸入的目標位置數量: {len(position)}")
         p.setJointMotorControlArray(
             self.robot_id,
             self.controllable_joints,
@@ -263,11 +263,13 @@ class PybulletRobotController:
         )
 
     # function to solve forward kinematics
-    def solveForwardPositonKinematics(self, joint_pos):
+    def solveForwardPositonKinematics(self):
         # get end-effector link state
         eeState = p.getLinkState(self.robot_id, self.end_eff_index)
         link_trn, link_rot, com_trn, com_rot, frame_pos, frame_rot = eeState
-        eePose = list(link_trn) + list(p.getEulerFromQuaternion(link_rot))
+        # eePose = list(link_trn) + list(p.getEulerFromQuaternion(link_rot))
+        eePose = list(frame_pos) + list(p.getEulerFromQuaternion(frame_rot))
+        print("End-effector pose:", eePose)
         return eePose
 
     def format_joint_angles(joint_angles, precision=3):
@@ -788,10 +790,10 @@ class PybulletRobotController:
         target_z = random.uniform(z_range[0], z_range[1])+self.initial_height
 
         target_position = [target_x, target_y, target_z]
-        # roll = math.pi /2
-        # pitch = 0
-        # yaw = 0
-        # target_position += [roll, pitch, yaw]
+        roll = math.pi /2
+        pitch = 0
+        yaw = 0
+        target_position += [roll, pitch, yaw]
         print(f"Generated random target: {target_position}")
 
         # Mark the target position
@@ -803,6 +805,28 @@ class PybulletRobotController:
         if target_joint_angles and len(target_joint_angles) >= len(self.controllable_joints):
             target_joint_angles = np.array(target_joint_angles[:len(self.controllable_joints)])
             print(f"IK solution found: {target_joint_angles.tolist()}")
+
+            # Get current joint positions
+            current_positions = np.array(self.getJointStates()[0])
+
+            angle_sequence = []
+            # Generate smooth transition sequence
+            for step in range(steps):
+                t = (step + 1) / steps # Start from t > 0 to move towards target
+                intermediate_positions = (1 - t) * current_positions + t * target_joint_angles
+                angle_sequence.append(intermediate_positions.tolist())
+
+            return angle_sequence
+        else:
+            print("Could not find a valid IK solution for the random target.")
+            return None
+    def go_to_position(self,position, steps=10):
+
+        target_joint_angles = self.solveInversePositionKinematics(position)
+
+        if target_joint_angles and len(target_joint_angles) >= len(self.controllable_joints):
+            target_joint_angles = np.array(target_joint_angles[:len(self.controllable_joints)])
+           # print(f"IK solution found: {target_joint_angles.tolist()}")
 
             # Get current joint positions
             current_positions = np.array(self.getJointStates()[0])
