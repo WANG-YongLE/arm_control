@@ -136,13 +136,8 @@ class RosCommunicator(Node):
         """
         Return realsense data. Prefer 'real_sense_2' if available, otherwise return 'real_sense_1'.
         """
-        if "real_sense_2" in self.realsense_data:
-            return self.realsense_data["real_sense_2"]
-        elif "real_sense_1" in self.realsense_data:
-            return self.realsense_data["real_sense_1"]
-        else:
-            self.get_logger().warn("No realsense data received yet.")
-            return None
+        return self.realsense_data
+
     def yolo_detection_status_callback(self, msg):
         self.latest_yolo_detection_status = msg
     def imu_data_callback(self, msg):

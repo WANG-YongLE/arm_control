@@ -269,7 +269,7 @@ class PybulletRobotController:
         link_trn, link_rot, com_trn, com_rot, frame_pos, frame_rot = eeState
         # eePose = list(link_trn) + list(p.getEulerFromQuaternion(link_rot))
         eePose = list(frame_pos) + list(p.getEulerFromQuaternion(frame_rot))
-        print("End-effector pose:", eePose)
+        print("End-effector ________________ose:", eePose)
         return eePose
 
     def format_joint_angles(joint_angles, precision=3):
@@ -333,6 +333,7 @@ class PybulletRobotController:
         Returns:
             list: 對應的關節角度。
         """
+        print(f"end_eff_pose:{end_eff_pose}")
         if len(end_eff_pose) == 6:
             joint_angles = p.calculateInverseKinematics(
                 self.robot_id,
@@ -790,7 +791,7 @@ class PybulletRobotController:
         target_z = random.uniform(z_range[0], z_range[1])+self.initial_height
 
         target_position = [target_x, target_y, target_z]
-        roll = math.pi /2
+        roll = math.pi 
         pitch = 0
         yaw = 0
         target_position += [roll, pitch, yaw]
