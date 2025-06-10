@@ -89,7 +89,7 @@ class RosCommunicator(Node):
             self.camera_x_multi_depth_callback,
             10,
         )
-
+        self.publisher_OK= self.create_publisher(String, "/OK", 10)
         # publish goal_pose
         self.publisher_goal_pose = self.create_publisher(PoseStamped, "/goal_pose", 10)
 
@@ -296,3 +296,11 @@ class RosCommunicator(Node):
         joint_trajectory_point.velocities = [0.0] * len(angle)
         print(f"Publishing robot arm angle: {joint_trajectory_point.positions}")
         self.publisher_joint_trajectory.publish(joint_trajectory_point)
+    def OK(self):
+        """
+        發布 OK 訊息
+        """
+        ok_msg = String()
+        ok_msg.data = "OK"
+        self.publisher_OK.publish(ok_msg)
+        self.get_logger().info("Published OK message")  

@@ -33,14 +33,14 @@ class ArmController:
 
         self.end_pos=[]
         self.robot_world_place=[-1.305,0.69,-0.63]
-        self.movement=[]
+
     #    print(self.data_processor.get_realrobot_position())
     def ensure_joint_pos_initialized(self):
 
         if len(self.joint_pos) < self.num_joints:
             self.joint_pos = [0.0] * self.num_joints
             self.joint_pos[1]=-10
-            self.joint_pos[2]=90
+            self.joint_pos[2]=100
             self.joint_pos[4]=-90
             self.reset_arm()
             self.update_action(self.joint_pos)
@@ -142,9 +142,7 @@ class ArmController:
                 self.end_pos[0] = z
                 self.end_pos[1] = y
                 self.end_pos[2] = z
-                self.end_pos[3] = 0.0
-                self.end_pos[4] = 0.0
-                self.end_pos[5] = 0.0
+
                 print(f"移動zzzzzz到角度: {self.end_pos}")
             else:
 
@@ -159,29 +157,20 @@ class ArmController:
                 print( self.realsense_data["real_sense_1"])
         elif key=="o":
             self.end_pos[0] = 0.4
-            self.end_pos[1] = 0.02
+            self.end_pos[1] = 0.2
             self.end_pos[2] = 0.3
             self.end_pos[3] = 0.0
-            self.end_pos[4] = 0.0
+            self.end_pos[4] = -np.pi/2
             self.end_pos[5] = 0.0
-            joint_angle=self.ik_solver.solveIK(self.end_pos)
+            joint_angle_sequences=self.ik_solver.solveIK(self.end_pos)
             for joint_angles in joint_angle_sequences:
                 self.ik_solver.setJointPosition(joint_angles)
                 self.set_all_joint_angles(joint_angles)
-                self.movement.append(joint_angles)
-
-
-        elif key == "x":
-            self.movement=[]
-            return True
-        elif key == "m":
-            for joint_angles in self.movement:
-                self.ik_solver.setJointPosition(joint_angles)
-                self.set_all_joint_angles(joint_angles)
                 self.update_action(joint_angles)
-            self.movement=[]
-            return True
-            
+            return
+
+
+
         else :
             print(f"按鍵 '{key}' 無效，請使用 'c', 'p', 'a', 's', 'd', 'f', 'g', 'h', 'q' 或 'z'。")
             return True
@@ -190,7 +179,7 @@ class ArmController:
         for joint_angles in joint_angle_sequences:
             self.ik_solver.setJointPosition(joint_angles)
             self.set_all_joint_angles(joint_angles)
-            self.movement.append(joint_angles)
+            self.update_action(joint_angles)
 
             
 
@@ -218,9 +207,8 @@ class ArmController:
             min_angle = joint_limits[index]["min_angle"]
             max_angle = joint_limits[index]["max_angle"]
 
-            if key == "y" and (index == 6 or index == 7):  # 減少角度
-                self.execute_action("catch")
-            elif key == "i" and index!=6 and index !=7:  # 增加角度
+
+            if key == "i" and index!=6 and index !=7:  # 增加角度
                 self.adjust_joint_angle(
                     joint_id=index,
                     delta_angle=10,
@@ -241,19 +229,14 @@ class ArmController:
                 self.real_robot_position()
                 return True
             elif key == "r":
+
                 self.reset_to_a_position()
+
+            elif key=="k":
+                self.ros_communicator.OK()
             elif key == "q":  # 結束控制
                 return True
-            elif key == "x":
-                self.movement=[]
-                return True
-            elif key == "m":
-                for joint_angles in self.movement:
-                    self.ik_solver.setJointPosition(joint_angles)
-                    self.set_all_joint_angles(joint_angles)
-                    self.update_action(joint_angles)
-                self.movement=[]
-                return True
+
             # elif key == "m":  # 避障 角度
             #     A = [0.0, -10, 90, 0.0, -90, 0.0, 0.01, -0.01,0]
             #     B = [0.0, -20, 70, -10.0, -90, 0.0, 0.01, -0.01,0]
@@ -274,6 +257,7 @@ class ArmController:
             print(f"索引 {index} 無效，請確保其在範圍內（0-{len(joint_limits) - 1}）。")
             return
         self.update_action(self.joint_pos)
+      #  print(self.ik_solver.solveForwardPositonKinematics())
 
     # try:
     #     object_position_world = self.project_yolo_to_world()
@@ -866,10 +850,10 @@ class ArmController:
     # 更新實體和虛擬
     def update_action(self, joint_pos):
      #   print(f"update_action: {self.get_joint_angles()}")
-
+        self.ros_communicator.publish_robot_arm_angle(joint_pos)
         self.ik_solver.setJointPosition(joint_pos)
         self.joint_pos=joint_pos
-        self.movement.append(joint_pos)
+        
      #   self.ik_solver.markEndEffector()
 
     def clamp(self, value, min_value, max_value):
@@ -917,13 +901,14 @@ class ArmController:
         )
 
     def set_multiple_joint_positions(self, joint_configs):
-        DEFAULT_LIMITS = (-90, 90)  # 預設角度限制
+
 
         for config in joint_configs:
             joint_id = config["joint_id"]
             target_angle = config["angle"]
             # 如果沒有設定 limits，使用預設值
-            min_angle, max_angle = config.get("limits", DEFAULT_LIMITS)
+            min_angle= -180
+            max_angle=180
 
             self.set_joint_position(
                 joint_index=joint_id,
@@ -950,7 +935,7 @@ class ArmController:
         joint_configs = [
             {"joint_id": 0,"angle": 0.0,},
             {"joint_id": 1, "angle": -10, },
-            {"joint_id": 2, "angle": 90, },
+            {"joint_id": 2, "angle": 100, },
             {"joint_id": 3, "angle": 0.0, },
             {"joint_id": 4, "angle": -90, },
             {"joint_id": 5, "angle": 0.0, },
@@ -982,7 +967,7 @@ class ArmController:
         joint_configs = [
             {"joint_id": 0,"angle": 0.0,},
             {"joint_id": 1, "angle": -10, },
-            {"joint_id": 2, "angle": 90, },
+            {"joint_id": 2, "angle": 100, },
             {"joint_id": 3, "angle": 0.0, },
             {"joint_id": 4, "angle": -90, },
             {"joint_id": 5, "angle": 0.0, },
@@ -1010,7 +995,7 @@ class ArmController:
         # 更新動作
         self.update_action(self.joint_pos)
 
-    def adjust_joint_angle(self, joint_id, delta_angle, min_angle=-90, max_angle=90):
+    def adjust_joint_angle(self, joint_id, delta_angle, min_angle=-180, max_angle=180):
         """
         Adjusts a joint angle by adding or subtracting from its current position.
 
@@ -1065,3 +1050,20 @@ class ArmController:
         else:
             return None
 
+    def solveIK(self, target_pos, weight_constraint=10.0):
+        target_dir = np.array(target_pos) - np.array([0, 0, 0])
+        target_dir /= np.linalg.norm(target_dir)
+        ee_pose=self.solveForwardPositonKinematics()
+        current_dir = np.array(ee_pos)
+        current_dir /= np.linalg.norm(current_dir)
+        angle_target = np.arctan2(target_dir[1], target_dir[0])
+        angle_current = np.arctan2(current_dir[1], current_dir[0])
+        delta_yaw = angle_target - angle_current
+        self.adjust_joint_angle(
+            joint_id=index,
+            delta_angle=delta_yaw,
+            min_angle=min_angle,
+            max_angle=max_angle,
+        )
+        self.update_action(self.joint_pos)
+        self.realsense_data = self.data_processor.get_realsense_data()
