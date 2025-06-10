@@ -3,7 +3,7 @@ from keyboard_mode_interface_pkg.utils.base_mode import BaseMode
 
 
 class ArmMode(BaseMode):
-    submodes = ["0", "1", "2", "3", "4","5", "6"]
+    submodes = ["0", "1", "2", "3", "4","5"]
 
     def enter(self):
         self.app.horizontal_select(self.submodes, self.handle_submode_select)
