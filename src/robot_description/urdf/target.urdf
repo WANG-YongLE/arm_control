@@ -500,8 +500,8 @@
     <parent link="joint252_1"/>
     <child link="25joint_v2_1"/>
     <axis xyz="0.0 -1.0 0.0"/>
-    <!--limit lower="-1.47" upper="1.47" effort="10" velocity="1.0"/-->
-    <limit lower="-0.175" upper="0.175" effort="10" velocity="1.0"/>
+    <limit lower="-1.47" upper="1.47" effort="10" velocity="1.0"/>
+    <!--limit lower="-0.175" upper="0.175" effort="10" velocity="1.0"/-->
   </joint>
 
   <joint name="Rigid 30" type="fixed">

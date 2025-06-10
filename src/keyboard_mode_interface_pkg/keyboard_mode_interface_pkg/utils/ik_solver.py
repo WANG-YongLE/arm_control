@@ -112,7 +112,7 @@ class PybulletRobotController:
         zero_vec = [0.0] * len(self.controllable_joints)
         # print(f"控制的關節索引數量: {len(self.controllable_joints)}")
         print(f"輸入的目標位置數量: {(position)}")
-        time.sleep(10)  # 等待一段時間以確保機器人穩定
+        time.sleep(0.0001)  # 等待一段時間以確保機器人穩定
         p.setJointMotorControlArray(
             self.robot_id,
             self.controllable_joints,

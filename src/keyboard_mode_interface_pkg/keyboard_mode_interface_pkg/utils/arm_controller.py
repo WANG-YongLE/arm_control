@@ -33,7 +33,7 @@ class ArmController:
 
         self.end_pos=[]
         self.robot_world_place=[-1.305,0.69,-0.63]
-
+        self.move_eff=0.1
     #    print(self.data_processor.get_realrobot_position())
     def ensure_joint_pos_initialized(self):
 
@@ -46,7 +46,7 @@ class ArmController:
             self.update_action(self.joint_pos)
         
     def move_x_positive(self):
-        self.end_pos[0] += 0.01
+        self.end_pos[0] += self.move_eff
         joint_angle_sequences=self.ik_solver.go_to_position(self.end_pos)
         for joint_angles in joint_angle_sequences:
             self.ik_solver.setJointPosition(joint_angles)
@@ -58,7 +58,7 @@ class ArmController:
 
 
         
-        self.end_pos[0] -= 0.01
+        self.end_pos[0] -= self.move_eff
         joint_angle_sequences=self.ik_solver.go_to_position(self.end_pos)
         for joint_angles in joint_angle_sequences:
             self.ik_solver.setJointPosition(joint_angles)
@@ -68,7 +68,7 @@ class ArmController:
     
     def move_y_positive(self):
 
-        self.end_pos[1] += 0.01
+        self.end_pos[1] += self.move_eff
         joint_angle_sequences=self.ik_solver.go_to_position(self.end_pos)
         for joint_angles in joint_angle_sequences:
             self.ik_solver.setJointPosition(joint_angles)
@@ -77,7 +77,7 @@ class ArmController:
         print(f"目前末端點位置: {self.end_pos}")
     
     def move_y_negative(self):
-        self.end_pos[1] -= 0.01
+        self.end_pos[1] -= self.move_eff
         joint_angle_sequences=self.ik_solver.go_to_position(self.end_pos)
         for joint_angles in joint_angle_sequences:
             self.ik_solver.setJointPosition(joint_angles)
@@ -86,7 +86,7 @@ class ArmController:
         print(f"目前末端點位置: {self.end_pos}")
     
     def move_z_positive(self):
-        self.end_pos[2] += 0.01
+        self.end_pos[2] += self.move_eff
         joint_angle_sequences=self.ik_solver.go_to_position(self.end_pos)
         for joint_angles in joint_angle_sequences:
             self.ik_solver.setJointPosition(joint_angles)
@@ -95,7 +95,7 @@ class ArmController:
         print(f"目前末端點位置: {self.end_pos}")
     
     def move_z_negative(self):
-        self.end_pos[2] -= 0.01
+        self.end_pos[2] -= self.move_eff
         joint_angle_sequences=self.ik_solver.go_to_position(self.end_pos)
         for joint_angles in joint_angle_sequences:
             self.ik_solver.setJointPosition(joint_angles)
@@ -232,8 +232,9 @@ class ArmController:
 
                 self.reset_to_a_position()
 
-            elif key=="k":
+            elif key=="o":
                 self.ros_communicator.OK()
+                return True
             elif key == "q":  # 結束控制
                 return True
 
@@ -253,9 +254,9 @@ class ArmController:
             # else:
             #     print(f"按鍵 '{key}' 無效，請使用 'i', 'k', 'b', 或 'q'。")
             #     return True
-        else:
-            print(f"索引 {index} 無效，請確保其在範圍內（0-{len(joint_limits) - 1}）。")
-            return
+            else:
+                print(f"索引 {index} 無效，請確保其在範圍內（0-{len(joint_limits) - 1}）。")
+                return
         self.update_action(self.joint_pos)
       #  print(self.ik_solver.solveForwardPositonKinematics())
 
