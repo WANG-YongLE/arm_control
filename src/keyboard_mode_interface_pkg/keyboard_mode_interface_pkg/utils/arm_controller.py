@@ -121,7 +121,7 @@ class ArmController:
         print(f"目前末端點位置: {self.end_pos}")
         print("開始移動")
         self.realsense_data = self.data_processor.get_realsense_data()
-        self.move_eff = 0.01
+        self.move_eff = 0.1
         if key == "c": # 相機看到球的位置
             print(f"ball position (camera side): {self.realsense_data}")
         elif key == "p": # 末端點位置
@@ -180,7 +180,7 @@ class ArmController:
                     self.move_y_negative()
                 now_y = self.end_pos[1]
             
-            operators = []
+            operators = [-1, -1, -1, -1, -1, 2]
 
             self.move_eff = 0.01
             for operator in operators:
@@ -196,6 +196,11 @@ class ArmController:
                     self.move_y_negative()
                 elif operator == -3:
                     self.move_z_negative()
+            
+            for t in range(3):
+                self.move_eff = 0.1
+                self.move_z_negative()
+            
         elif key == "o":
             self.end_pos[0] = -0.4
             self.end_pos[1] = 0.2
