@@ -12,6 +12,7 @@ import rclpy
 import math
 import json
 
+import numpy as np
 
 class RosCommunicator(Node):
     def __init__(self):
@@ -119,6 +120,7 @@ class RosCommunicator(Node):
         )
     def box_place_callback(self, msg):
         # 解析 JSON 字串
+     #   print("Received box place data:", msg.data)
         try:
             json_obj = json.loads(msg.data)
         except json.JSONDecodeError as e:

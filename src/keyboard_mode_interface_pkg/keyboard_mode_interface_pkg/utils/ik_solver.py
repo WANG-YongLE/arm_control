@@ -405,6 +405,16 @@ class PybulletRobotController:
             print("Could not find a valid IK solution for the random target.")
             return None
 
+    def remove_flat_box(self):
+        """
+        刪除之前建立的方塊物件（若存在）
+        """
+        if self.box_id is not None:
+            p.removeBody(self.box_id)
+            self.box_id = None
+            print("已成功刪除方塊。")
+        else:
+            print("尚未建立方塊，無需刪除。")
 
     def create_flat_box_from_points(self,p0, p1, color=[1, 0, 0, 1]):
         """
@@ -418,7 +428,7 @@ class PybulletRobotController:
         ab_vec = p1[:2] - p0[:2]
         ab_len = np.linalg.norm(ab_vec)
         ab_dir = ab_vec / ab_len
-
+        self.markTarget(p0)
         # 垂直方向
         normal_dir = np.array([-ab_dir[1], ab_dir[0]])
 
@@ -459,4 +469,6 @@ class PybulletRobotController:
             # 已建立，直接移動
             p.resetBasePositionAndOrientation(self.box_id, center_pos, orientation)
             return self.box_id
+    def has_collision(self):
+        return p.getContactPoints(bodyA=self.robot_id)
 
