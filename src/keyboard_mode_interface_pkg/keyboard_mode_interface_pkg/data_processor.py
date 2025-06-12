@@ -5,6 +5,8 @@ import math
 class DataProcessor:
     def __init__(self, ros_communicator):
         self.ros_communicator = ros_communicator
+    def get_world_aruco(self):
+        return self.ros_communicator.world_aruco
     def get_realsense_data(self):
         realsense_data_msg = self.ros_communicator.get_latest_realsense_data()
         if realsense_data_msg is not None:

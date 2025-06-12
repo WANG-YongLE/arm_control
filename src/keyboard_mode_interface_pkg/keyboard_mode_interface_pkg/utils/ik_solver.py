@@ -49,7 +49,7 @@ class PybulletRobotController:
         # 讀取並初始化關節限制
         self.joint_limits = self.get_joint_limits_from_urdf()
         self.num_joints = len(self.joint_limits)  # 使用關節數量設定
-        
+        self.box_id = None  # 初始化 box_id 為 None
     # function to initiate pybullet and engine and create world
     def createWorld(self, GUI=True, view_world=False):
         # load pybullet physics engine
@@ -68,6 +68,8 @@ class PybulletRobotController:
         p.setRealTimeSimulation(True)
         p.loadURDF("plane.urdf")
         rotation = R.from_euler("z", 0, degrees=True).as_quat()
+        planeId = p.createCollisionShape(p.GEOM_PLANE)
+        p.createMultiBody(0, planeId)
 
         # loading robot into the environment
         
@@ -91,6 +93,11 @@ class PybulletRobotController:
         print(f"可控制的關節索引: {self.controllable_joints}")
         print(f"需要提供的初始位置數量: {len(self.controllable_joints)}")
         self.markEndEffector()
+        cubeId = p.createCollisionShape(p.GEOM_BOX, halfExtents=[0.5, 0.5, 0.5])
+        cubePos = [5, 5, 5]
+        cubeOri = p.getQuaternionFromEuler([0, 0, 0])
+        p.createMultiBody(1, cubeId, -1, cubePos, cubeOri)
+
         if view_world:
             while True:
                 p.stepSimulation()
@@ -112,7 +119,7 @@ class PybulletRobotController:
         zero_vec = [0.0] * len(self.controllable_joints)
         # print(f"控制的關節索引數量: {len(self.controllable_joints)}")
         print(f"輸入的目標位置數量: {(position)}")
-        time.sleep(0.0001)  # 等待一段時間以確保機器人穩定
+
         p.setJointMotorControlArray(
             self.robot_id,
             self.controllable_joints,
@@ -122,7 +129,7 @@ class PybulletRobotController:
             positionGains=[kp] * len(self.controllable_joints),
             velocityGains=[kv] * len(self.controllable_joints),
         )
-        for _ in range(30):  # to settle the robot to its position
+        for _ in range(20):  # to settle the robot to its position
             p.stepSimulation()
 
     def get_base_position(self):
@@ -299,7 +306,7 @@ class PybulletRobotController:
         p.addUserDebugPoints(
             pointPositions=[list(ee_position)], 
             pointColorsRGB=[[0, 0, 1]],  # 把顏色改成列表的列表
-            pointSize=10
+            pointSize=5
         )
 
 
@@ -399,5 +406,57 @@ class PybulletRobotController:
             return None
 
 
+    def create_flat_box_from_points(self,p0, p1, color=[1, 0, 0, 1]):
+        """
+        使用兩個 3D 點建立一個對齊線段的長方體，垂直向下延伸到底部平面。
+        
+        :param p0: numpy array, 第 0 個點 (3D)
+        :param p1: numpy array, 第 1 個點 (3D)
+        :param color: 可選，RGBA 顏色
+        """
+        # 計算 ab 向量（只考慮 XY 平面方向）
+        ab_vec = p1[:2] - p0[:2]
+        ab_len = np.linalg.norm(ab_vec)
+        ab_dir = ab_vec / ab_len
 
+        # 垂直方向
+        normal_dir = np.array([-ab_dir[1], ab_dir[0]])
+
+        # 方塊尺寸
+        box_length = 0.08
+        box_width = 0.50
+        box_height = p0[2]  # 向下延伸到地面
+
+        # 中心位置（XY）
+        center_xy = p0[:2] + ab_dir * (box_length / 2) + normal_dir * (box_width / 2)
+        center_z = box_height / 2
+        center_pos = [center_xy[0], center_xy[1], center_z]
+
+        # 姿態（yaw 角轉為四元數）
+        yaw = np.arctan2(ab_dir[1], ab_dir[0])
+        orientation = p.getQuaternionFromEuler([0, 0, yaw])
+
+        # 半尺寸
+        half_extents = [box_length / 2, box_width / 2, box_height / 2]
+
+        # 建立形狀
+        col_id = p.createCollisionShape(p.GEOM_BOX, halfExtents=half_extents)
+        vis_id = p.createVisualShape(p.GEOM_BOX, halfExtents=half_extents, rgbaColor=color)
+
+        if self.box_id is None:
+            # 第一次建立
+            col_id = p.createCollisionShape(p.GEOM_BOX, halfExtents=half_extents)
+            vis_id = p.createVisualShape(p.GEOM_BOX, halfExtents=half_extents, rgbaColor=color)
+            self.box_id = p.createMultiBody(
+                baseMass=0,
+                baseCollisionShapeIndex=col_id,
+                baseVisualShapeIndex=vis_id,
+                basePosition=center_pos,
+                baseOrientation=orientation
+            )
+            return self.box_id
+        else:
+            # 已建立，直接移動
+            p.resetBasePositionAndOrientation(self.box_id, center_pos, orientation)
+            return self.box_id
 

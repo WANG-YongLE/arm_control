@@ -16,6 +16,10 @@ import json
 class RosCommunicator(Node):
     def __init__(self):
         super().__init__("RosCommunicator")
+        self.world_aruco=[]
+        self.box_place=self.create_subscription(
+            String, "/real_sense_1/D455/position", self.box_place_callback, 10
+        )
         self.realrobot_position = None
         self.realsense_data = {}
         self.realsense_1_sub = self.create_subscription(
@@ -113,6 +117,22 @@ class RosCommunicator(Node):
         self.publisher_target_marker = self.create_publisher(
             Marker, "/selected_target_marker", 10
         )
+    def box_place_callback(self, msg):
+        # 解析 JSON 字串
+        try:
+            json_obj = json.loads(msg.data)
+        except json.JSONDecodeError as e:
+            print("JSON 解析錯誤:", e)
+            return
+
+        # 提取世界座標 (world_x, world_y, world_z)
+        try:
+            aruco_points = json_obj[0]["points"]
+            self.world_aruco = np.array([
+                [p["world_x"], p["world_y"], p["world_z"]] for p in aruco_points
+            ], dtype=np.float32)
+        except (KeyError, IndexError) as e:
+            print("資料格式錯誤:", e)
 
     def realsense_callback(self, msg):
         """

@@ -40,6 +40,7 @@ class ArmController:
     def ensure_joint_pos_initialized(self):
         if len(self.joint_pos) < self.num_joints:
             self.joint_pos = [0.0] * self.num_joints
+            self.joint_pos[0] = 10
             self.joint_pos[1] = -30
             self.joint_pos[2] = 90
             self.joint_pos[3] = 30
@@ -124,6 +125,39 @@ class ArmController:
         self.move_eff = 0.1
         if key == "c": # 相機看到球的位置
             print(f"ball position (camera side): {self.realsense_data}")
+
+        elif key == "b":
+
+            points = [
+                {"pixel_x": 409.0, "pixel_y": 382.0, "world_x": -1.588, "world_y": 1.277, "world_z": -0.585},
+                {"pixel_x": 455.0, "pixel_y": 381.0, "world_x": -1.245, "world_y": 1.163, "world_z": -0.53},
+                {"pixel_x": 458.0, "pixel_y": 423.0, "world_x": -1.243, "world_y": 1.077, "world_z": -0.535},
+                {"pixel_x": 413.0, "pixel_y": 425.0, "world_x": -2.188, "world_y": 1.077, "world_z": 0.285}
+            ]
+
+            world_aruco = np.array([
+                [p["world_x"], p["world_y"], p["world_z"]] for p in points
+            ], dtype=np.float32)
+
+            x = self.data_processor.get_world_aruco()
+            if x is not None and x != []:
+                world_aruco = np.array(x, dtype=np.float32)  # ✅ 強制轉為 NumPy 陣列
+                print(f"world_aruco: {world_aruco}")
+
+            transformed_aruco = []
+            for point in world_aruco:
+                world_x, world_y, world_z = point  # 若 point 是 NumPy array，就不會出錯
+                x = -1 - world_z
+                y = -1.33 - world_x
+                z = -0.72 + world_y
+                transformed_aruco.append([x, y, z])
+
+            p0 = np.array(transformed_aruco[0], dtype=np.float32)
+            p1 = np.array(transformed_aruco[1], dtype=np.float32)
+
+            self.ik_solver.create_flat_box_from_points(p0, p1)
+
+
         elif key == "p": # 末端點位置
             print(self.ik_solver.solveForwardPositonKinematics())
         elif key == "a":
@@ -142,45 +176,48 @@ class ArmController:
             return True
         elif key == "i": # 爪子去追蹤球
             target_pos = self.get_realsense_1_data()
+            if(target_pos is None):
+                print("realsense_1_data is None")
+                return True
             to_x = target_pos["x"]
             to_y = target_pos["y"]
             to_z = target_pos["z"]
-            now_x = self.end_pos[0]
-            now_y = self.end_pos[1]
-            now_z = self.end_pos[2]
-            self.move_eff = 0.1
-            while abs(to_x - now_x) > self.move_eff:
-                if to_x > now_x:
-                    self.move_x_positive()
-                else:
-                    self.move_x_negative()
-                now_x = self.end_pos[0]
-            
-            self.move_eff = 0.01
-            while abs(to_x - now_x) > self.move_eff:
-                if to_x > now_x:
-                    self.move_x_positive()
-                else:
-                    self.move_x_negative()
-                now_x = self.end_pos[0]
 
-            self.move_eff = 0.1
-            while abs(to_y - now_y) > self.move_eff:
-                if to_y > now_y:
-                    self.move_y_positive()
-                else:
-                    self.move_y_negative()
+            def move_x(dx):
+                now_x = self.end_pos[0]
                 now_y = self.end_pos[1]
+                now_z = self.end_pos[2]
+                self.move_eff = dx
+                while abs(to_x - now_x) > self.move_eff:
+                    if to_x > now_x:
+                        self.move_x_positive()
+                    else:
+                        self.move_x_negative()
+                    now_x = self.end_pos[0]
+
+            def move_y(dy):
+                now_x = self.end_pos[0]
+                now_y = self.end_pos[1]
+                now_z = self.end_pos[2]
+                self.move_eff = dy
+                while abs(to_y - now_y) > self.move_eff:
+                    if to_y > now_y:
+                        self.move_y_positive()
+                    else:
+                        self.move_y_negative()
+                    now_y = self.end_pos[1]
             
+            move_x(0.3)
+            move_x(0.1)
+            move_x(0.05)
+            move_x(0.01)
+            
+            move_y(0.3)
+            move_y(0.1)
+            move_y(0.05)
+            move_y(0.01)
             self.move_eff = 0.01
-            while abs(to_y - now_y) > self.move_eff:
-                if to_y > now_y:
-                    self.move_y_positive()
-                else:
-                    self.move_y_negative()
-                now_y = self.end_pos[1]
-            
-            operators = [-1, -1, -1, -1, -1, 2]
+            operators = [-1]
 
             self.move_eff = 0.01
             for operator in operators:
@@ -196,22 +233,16 @@ class ArmController:
                     self.move_y_negative()
                 elif operator == -3:
                     self.move_z_negative()
-            
-            for t in range(3):
+
+            for t in range(2):
                 self.move_eff = 0.1
                 self.move_z_negative()
             
         elif key == "o":
-            self.end_pos[0] = -0.4
-            self.end_pos[1] = 0.2
-            self.end_pos[2] = 0.3   
+            target = self.get_realsense_1_data() 
+            target_pos = [target["x"], target["y"], target["z"]]
+            self.turn_direction(target_pos)
 
-            have_in_2 = self.turn_direction(self.end_pos)
-            if have_in_2:
-                print(f"移動到角度: {self.end_pos}")
-            else:
-                return True
-            return True
         elif key == "w": # 開關爪子
             self.switch_crawl()
             self.update_action(self.joint_pos)
@@ -264,6 +295,8 @@ class ArmController:
             elif key == "r":
                 self.reset_to_a_position()
                 print(f"目前末端點位置: {self.ik_solver.solveForwardPositonKinematics()}")
+            elif key =="s":
+                self.reset_to_a_position2()
             elif key == "o":
                 self.ros_communicator.OK()
                 return True
@@ -328,7 +361,7 @@ class ArmController:
         # 最後確保到目標
         self.joint_pos = B_radians
         self.update_action(self.joint_pos)
-        time.sleep(0.1)
+        time.sleep(0.001)
         
 
 
@@ -963,7 +996,7 @@ class ArmController:
             >>> self.publish_arm_position()
         """
         joint_configs = [
-            {"joint_id": 0,"angle": 0.0,},
+            {"joint_id": 0,"angle": 10,},
             {"joint_id": 1, "angle": -30, },
             {"joint_id": 2, "angle": 90, },
             {"joint_id": 3, "angle": 30, },
@@ -995,7 +1028,7 @@ class ArmController:
             >>> self.publish_arm_position()
         """
         joint_configs = [
-            {"joint_id": 0,"angle": 0.0,},
+            {"joint_id": 0,"angle": 10,},
             {"joint_id": 1, "angle": -30, },
             {"joint_id": 2, "angle": 90, },
             {"joint_id": 3, "angle": 30, },
@@ -1003,7 +1036,26 @@ class ArmController:
             {"joint_id": 5, "angle": 0.0, },
         ]
         self.set_multiple_joint_positions(joint_configs)
+    def reset_to_a_position2(self):
+        """
+        Resets the robotic arm to the default position (all angles set to 0).
 
+        This method resets the positions of all joints to their initial values, and the result can be
+        published using the `publish_arm_position()` method.
+
+        Example:
+            >>> self.reset_arm()
+            >>> self.publish_arm_position()
+        """
+        joint_configs = [
+            {"joint_id": 0,"angle": 0.0,},
+            {"joint_id": 1, "angle": 10, },
+            {"joint_id": 2, "angle": 100, },
+            {"joint_id": 3, "angle": 0, },
+            {"joint_id": 4, "angle": -90, },
+            {"joint_id": 5, "angle": 0.0, },
+        ]
+        self.set_multiple_joint_positions(joint_configs)
     def set_last_joint_angle(self, target_angle, min_angle=-360.0, max_angle=360.0):
         """
         直接設定機械手臂最後一軸的角度。
@@ -1131,10 +1183,7 @@ class ArmController:
         now_pos = self.ik_solver.solveForwardPositonKinematics()
         target_pos = np.array(target_pos[0:2])
         now_pos = np.array(now_pos[0:2])
-
-        
-    def move_in_realsense2(self,target_pos):
-        ...
+    
     def get_realsense_1_data(self):
         """
         從 realsense_data 提取 real_sense_1 的數據並處理
@@ -1155,21 +1204,184 @@ class ArmController:
         world_x = coords["world_x"]
         world_y = coords["world_y"]
         world_z = coords["world_z"]
-        # x = -1 * (coords["world_z"] - self.robot_world_place[2])
-        # y = -1 * (coords["world_x"] - self.robot_world_place[0])
-        # z = coords["world_y"] - self.robot_world_place[1]
-        
-        # # 創建目標陣列 (注意: 原程式碼中 z 被賦值了兩次，這裡保持原樣)
-        # realsense_1_target = np.zeros(3)
-        # realsense_1_target[0] = z  # 注意: 這裡可能有問題，原程式碼將 z 賦值給 [0] 和 [2]
-        # realsense_1_target[1] = y
-        # realsense_1_target[2] = z  # 這裡是否應該是 x?
-        x = -1 - world_z
-        y = -1.33 - world_x
-        z = -0.72 + world_y
+
+        x = -0.64 - world_z
+        y = -0.72 - world_x
+        z = -0.12 + world_y
         
         return {
             "x": x,
             "y": y,
             "z": z,
         }
+
+
+
+
+def safe_move_x_positive(self):
+    prev_pos = self.end_pos.copy()
+    self.end_pos[0] += self.move_eff
+    joint_angle_sequences = self.ik_solver.go_to_position(self.end_pos)
+
+    for joint_angles in joint_angle_sequences:
+        self.ik_solver.setJointPosition(joint_angles)
+        self.set_all_joint_angles(joint_angles)
+        self.ik_solver.setJointPosition(joint_angles)
+
+        if self.has_collision():
+            print("碰撞發生，回復前一個位置")
+            self.end_pos = prev_pos
+            return True
+        else:
+            self.update_action(joint_angles)
+    def safe_move_x_negative(self):
+        prev_pos = self.end_pos.copy()
+        self.end_pos[0] -= self.move_eff
+        joint_angle_sequences = self.ik_solver.go_to_position(self.end_pos)
+
+        for joint_angles in joint_angle_sequences:
+            self.ik_solver.setJointPosition(joint_angles)
+            self.set_all_joint_angles(joint_angles)
+            self.ik_solver.setJointPosition(joint_angles)
+
+            if self.has_collision():
+                print("碰撞發生，回復前一個位置")
+                self.end_pos = prev_pos
+                return
+            else:
+                self.update_action(joint_angles)
+    print(f"目前末端點位置: {self.end_pos}")
+    def safe_move_y_positive(self):
+        prev_pos = self.end_pos.copy()
+        self.end_pos[1] += self.move_eff
+        joint_angle_sequences = self.ik_solver.go_to_position(self.end_pos)
+        for joint_angles in joint_angle_sequences:
+            self.ik_solver.setJointPosition(joint_angles)
+            self.set_all_joint_angles(joint_angles)
+            self.ik_solver.setJointPosition(joint_angles)
+            if self.has_collision():
+                print("碰撞發生，回復前一個位置")
+                self.end_pos = prev_pos
+                return
+            else:
+                self.update_action(joint_angles)
+        print(f"目前末端點位置: {self.end_pos}")
+    def safe_move_y_negative(self):
+        prev_pos = self.end_pos.copy()
+        self.end_pos[1] -= self.move_eff
+        joint_angle_sequences = self.ik_solver.go_to_position(self.end_pos)
+        for joint_angles in joint_angle_sequences:
+            self.ik_solver.setJointPosition(joint_angles)
+            self.set_all_joint_angles(joint_angles)
+            self.ik_solver.setJointPosition(joint_angles)
+            if self.has_collision():
+                print("碰撞發生，回復前一個位置")
+                self.end_pos = prev_pos
+                return
+            else:
+                self.update_action(joint_angles)
+        print(f"目前末端點位置: {self.end_pos}")
+    def safe_move_z_positive(self):
+        prev_pos = self.end_pos.copy()
+        self.end_pos[2] += self.move_eff
+        joint_angle_sequences = self.ik_solver.go_to_position(self.end_pos)
+        for joint_angles in joint_angle_sequences:
+            self.ik_solver.setJointPosition(joint_angles)
+            self.set_all_joint_angles(joint_angles)
+            self.ik_solver.setJointPosition(joint_angles)
+            if self.has_collision():
+                print("碰撞發生，回復前一個位置")
+                self.end_pos = prev_pos
+                return
+            else:
+                self.update_action(joint_angles)
+        print(f"目前末端點位置: {self.end_pos}")
+    def safe_move_z_negative(self):
+        prev_pos = self.end_pos.copy()
+        self.end_pos[2] -= self.move_eff
+        joint_angle_sequences = self.ik_solver.go_to_position(self.end_pos)
+        for joint_angles in joint_angle_sequences:
+            self.ik_solver.setJointPosition(joint_angles)
+            self.set_all_joint_angles(joint_angles)
+            self.ik_solver.setJointPosition(joint_angles)
+            if self.has_collision():
+                print("碰撞發生，回復前一個位置")
+                self.end_pos = prev_pos
+                return
+            else:
+                self.update_action(joint_angles)
+        print(f"目前末端點位置: {self.end_pos}")
+    def safe_joint():
+        self.adjust_joint_angle(
+            joint_id=1,
+            delta_angle=-1,
+        )
+        self.adjust_joint_angle(
+            joint_id=2,
+            delta_angle=-1,
+        )
+        self.update_action(self.joint_pos)
+    # def go_to_T(self):
+    #         target_pos = self.get_realsense_1_data()
+    #         to_x = target_pos["x"]
+    #         to_y = target_pos["y"]
+    #         to_z = target_pos["z"]
+
+    #         def move_x(dx):
+    #             now_x = self.end_pos[0]
+    #             now_y = self.end_pos[1]
+    #             now_z = self.end_pos[2]
+    #             self.move_eff = dx
+    #             while abs(to_x - now_x) > self.move_eff:
+    #                 if to_x > now_x:
+    #                     self.save_move_x_positive()
+    #                 else:
+    #                     self.save_move_x_negative()
+    #                 now_x = self.end_pos[0]
+
+    #         def move_y(dy):
+    #             now_x = self.end_pos[0]
+    #             now_y = self.end_pos[1]
+    #             now_z = self.end_pos[2]
+    #             self.move_eff = dy
+    #             while abs(to_y - now_y) > self.move_eff:
+    #                 if to_y > now_y:
+    #                     while(self.move_y_positive()is False):
+
+    #                 else:
+    #                     self.move_y_negative()
+    #                 now_y = self.end_pos[1]
+            
+
+            
+    #         move_y(0.3)
+    #         move_y(0.1)
+    #         move_y(0.05)
+    #         move_y(0.01)
+
+    #         move_x(0.3)
+    #         move_x(0.1)
+    #         move_x(0.05)
+    #         move_x(0.01)
+    #         operators = [-1, -1, -1, -1, -1, 2]
+
+    #         self.move_eff = 0.01
+    #         for operator in operators:
+    #             if operator == 1:
+    #                 self.move_x_positive()
+    #             elif operator == 2:
+    #                 self.move_y_positive()
+    #             elif operator == 3:
+    #                 self.move_z_positive()
+    #             elif operator == -1:
+    #                 self.move_x_negative()
+    #             elif operator == -2:
+    #                 self.move_y_negative()
+    #             elif operator == -3:
+    #                 self.move_z_negative()
+    #         self.end_pos =self.ik_solver.solveForwardPositonKinematics()
+    #         s = round((self.end_pos[2]-0.05) / 0.1)-1
+    #         print(f"目前末端點位置: {self.end_pos}, s: {s}")
+    #         for t in range(2):
+    #             self.move_eff = 0.1
+    #             self.move_z_negative()
